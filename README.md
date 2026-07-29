@@ -57,3 +57,7 @@ python -m http.server 8080
 ## 声明
 
 本项目仅用于娱乐与前端演示，所有热搜内容均来自公开平台当日趋势快照，不代表任何立场或观点。
+
+## License
+
+[MIT License](LICENSE) © 2026 Louis Ding (luisdingww-bit)
