@@ -192,6 +192,38 @@
   .a-link:hover{background:rgba(142,240,255,.22);transform:translateY(-1px)}
   .ranges .seg{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:99px;background:rgba(255,255,255,.03);backdrop-filter:blur(10px)}
   .ranges .chip.on{background:linear-gradient(135deg,#e9cf9a,#c9a355);color:#1a1405}
+  .sec-title .en{font-family:"Cormorant Garamond",serif;font-style:italic;font-weight:500;color:var(--gold);font-size:14px;opacity:.8}
+  /* 运势评级揭晓 */
+  .luck{position:fixed;left:50%;top:26%;transform:translate(-50%,-50%) scale(.5);z-index:88;pointer-events:none;opacity:0;text-align:center;transition:opacity .35s,transform .45s cubic-bezier(.2,1.5,.4,1)}
+  .luck.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .luck .lr{font-size:clamp(42px,9vw,78px);font-weight:900;letter-spacing:5px;line-height:1;text-shadow:0 8px 36px rgba(0,0,0,.65)}
+  .luck .lv{font-size:16px;color:var(--sub);margin-top:10px;letter-spacing:2px}
+  .luck .lv b{color:var(--gold);font-size:24px;font-weight:900}
+  .luck .sp{margin-top:8px;font-size:13px;color:var(--sub);max-width:80vw}
+  /* 抽卡历史 */
+  .hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;max-height:360px;overflow:auto;padding:4px;margin-bottom:8px}
+  .hitem{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;transition:.15s;backdrop-filter:blur(10px)}
+  .hitem:hover{transform:translateY(-2px);border-color:rgba(233,207,154,.45)}
+  .hitem .hi-top{display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .hitem .hi-rank{font-size:11px;font-weight:900;padding:2px 8px;border-radius:99px;color:#1a1405}
+  .hitem .hi-time{font-size:10.5px;color:var(--muted)}
+  .hitem .hi-best{font-size:13px;font-weight:700;margin-top:6px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .hitem .hi-meta{font-size:11px;color:var(--sub);margin-top:4px}
+  .hist-empty{color:var(--muted);font-size:13px;text-align:center;padding:34px}
+  /* 图鉴工具栏 + 进度环 */
+  .atool{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px}
+  .atool input,.atool select{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:11px;color:var(--txt);padding:9px 13px;font-size:13px;font-family:inherit;outline:none;transition:.15s}
+  .atool input:focus,.atool select:focus{border-color:rgba(233,207,154,.55);box-shadow:0 0 0 3px rgba(233,207,154,.1)}
+  .atool input{flex:1;min-width:150px}
+  .atool select{cursor:pointer}
+  .rings{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .ring{position:relative;width:54px;height:54px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .rlab{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+  .ring .rlab b{font-size:12px;font-weight:900}
+  .ring .rk{font-size:8.5px;color:var(--sub);margin-top:2px}
+  .kbd{display:inline-flex;gap:5px;align-items:center;font-size:11px;color:var(--muted)}
+  .kbd b{background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-family:Outfit;font-weight:700;font-size:10.5px}
 </style>
 </head>
 <body>
@@ -202,6 +234,7 @@
 <canvas id="stars"></canvas>
 <canvas id="fx"></canvas>
 <div class="flash" id="flash"></div>
+<div class="luck" id="luck"></div>
 
 <div class="wrap">
   <div class="ticker"><span class="lab">实时热搜</span><span class="track" id="tickerTrack"></span></div>
@@ -251,8 +284,22 @@
   <div class="sec-title">热搜图鉴 <span class="ln"></span></div>
   <div class="sec-sub">点亮过的卡会记录你抽到的真实热搜；未解锁显示为剪影。点击卡片看完整来龙去脉，或设为「心愿」提高出货概率。图鉴随所选数据范围变化。</div>
   <div class="filters" id="filters"></div>
+  <div class="atool">
+    <input id="albumSearch" type="text" placeholder="搜索图鉴（标题 / 来源 / 领域）…" />
+    <select id="albumSort">
+      <option value="rarity">按稀有度</option>
+      <option value="heat">按热度</option>
+      <option value="date">按日期</option>
+    </select>
+    <div class="rings" id="rings"></div>
+    <span class="kbd">搜索 <b>/</b> ｜ 单抽 <b>Space</b> ｜ 十连 <b>⇧Space</b></span>
+  </div>
   <div class="album" id="album"></div>
   <div class="album-count" id="albumCount"></div>
+
+  <div class="sec-title">抽卡记录 <span class="en">Pull History</span><span class="ln"></span></div>
+  <div class="sec-sub">最近 20 次抽卡的运势与最高出货，点击可查看该卡详情。最高欧气：<b id="luckBestTxt" style="color:var(--gold)">0</b> ｜ 最长 SSR+ 连击：<b id="streakBestTxt" style="color:var(--gold)">0</b></div>
+  <div class="hist" id="hist"></div>
 
   <footer class="foot">数据来自公开平台当日趋势快照，由定时任务每日自动抓取更新，仅供娱乐演示。<br/>稀有度由话题全网热度与跨平台扩散度综合标定，抽卡结果随机抽取。</footer>
 </div>
@@ -377,8 +424,8 @@ const ACH = {
 /* ====== 状态 ====== */
 const SAVE_KEY="hotpull_save_v3";
 let save = loadSave();
-function loadSave(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s) return Object.assign({total:0,ur:0,ssr:0,sr:0,r:0,n:0,pity:0,owned:{},ach:{},wish:null,wishMiss:0,sound:true},s); }catch(e){}
-  return {total:0,ur:0,ssr:0,sr:0,r:0,n:0,pity:0,owned:{},ach:{},wish:null,wishMiss:0,sound:true}; }
+function loadSave(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s) return Object.assign({total:0,ur:0,ssr:0,sr:0,r:0,n:0,pity:0,owned:{},ach:{},wish:null,wishMiss:0,sound:true,luckBest:0,streak:0,streakBest:0,history:[]},s); }catch(e){}
+  return {total:0,ur:0,ssr:0,sr:0,r:0,n:0,pity:0,owned:{},ach:{},wish:null,wishMiss:0,sound:true,luckBest:0,streak:0,streakBest:0,history:[]}; }
 function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
 
 /* ====== 音效 ====== */
@@ -477,9 +524,15 @@ function finishDraw(cards){
   busy=false;
   const best=cards.reduce((a,b)=> rrank(b.r)>rrank(a.r)?b:a);
   const news=cards.filter(c=>c._new).length;
+  const luck=computeLuck(cards);
+  recordHistory(cards,luck);
+  showLuck(luck,best);
+  const tier=luckTier(luck);
+  const streakTxt = (save.streak>=2) ? ` · 🔥 连击 ${save.streak}` : '';
   const b=document.createElement("div"); b.className="banner";
   b.innerHTML=`<div class="big" style="color:${best.r==='UR'?'var(--ur)':best.r==='SSR'?'var(--ssr)':best.r==='SR'?'var(--sr)':'var(--txt)'}">${RARITY[best.r].star} ${RARITY[best.r].name} 出货！</div>
     <div class="small">本次最高：<b>${best.t}</b> · ${best.src}</div>
+    <div class="small">运势：<b style="color:${tier.c}">${tier.n}</b> · 欧气值 ${luck}${streakTxt}</div>
     <div class="small">今日运势：${FORTUNE[best.r]}</div>
     <div class="small">新获得 ${news} 张 · 当前范围已收集 ${Object.keys(save.owned).filter(id=>CARDS.some(c=>c.id==id)).length}/${CARDS.length}</div>
     <div class="acts"><button class="btn" id="bShare">生成分享图</button><a class="btn ghost" href="${cardUrl(best)}" target="_blank" rel="noopener">查看原话题 ↗</a><button class="btn ghost" id="bAgain">再抽一次</button></div>`;
@@ -494,6 +547,65 @@ function bannerBig(c){ const old=document.getElementById("bigBanner"); if(old) o
   bannerHost.appendChild(b); }
 const FORTUNE={ UR:"天胡！今天宜大胆、宜冲浪、宜发朋友圈。", SSR:"欧气傍身，重要的决定今天做都不亏。",
   SR:"小吉，稳中向好，适合把想做的事启动。", R:"平运，平淡是真，留意身边的小确幸。", N:"水逆边缘，先苟住，下一发转运。" };
+
+/* ====== 运势评级 ====== */
+const LUCK_TIERS=[{min:0,n:"非酋",c:"#7f88ad"},{min:16,n:"小凶",c:"#6db4ff"},{min:34,n:"小吉",c:"#7af9ff"},{min:50,n:"中吉",c:"#b06bff"},{min:66,n:"大吉",c:"#ff7a45"},{min:82,n:"欧皇",c:"#ffd54a"}];
+function luckTier(v){ let t=LUCK_TIERS[0]; for(const x of LUCK_TIERS) if(v>=x.min) t=x; return t; }
+function computeLuck(cards){
+  const best=Math.max(...cards.map(c=>rrank(c.r)));
+  const ur=cards.filter(c=>c.r==='UR').length, ssr=cards.filter(c=>c.r==='SSR').length, sr=cards.filter(c=>c.r==='SR').length;
+  let base = best>=5?70:best>=4?52:best>=3?34:best>=2?16:6;
+  base += ur*12 + ssr*6 + Math.min(sr,3)*2;
+  return Math.min(100, base);
+}
+let luckT;
+function showLuck(v,best){
+  const t=luckTier(v), el=document.getElementById('luck');
+  el.innerHTML=`<div class="lr" style="color:${t.c}">${t.n}</div><div class="lv">欧气值 <b>${v}</b> / 100</div><div class="sp">${best?RARITY[best.r].star+' '+best.t:''}</div>`;
+  el.classList.add('on');
+  if(v>=66){[523,659,784,1046,1318].forEach((f,i)=>beep(f,0.4,'sawtooth',0.14,i*0.08));}
+  else if(v>=34){[523,659,784].forEach((f,i)=>beep(f,0.3,'triangle',0.12,i*0.07));}
+  else{beep(330,0.25,'sine',0.1);}
+  clearTimeout(luckT); luckT=setTimeout(()=>el.classList.remove('on'),2400);
+}
+function recordHistory(cards,luck){
+  const best=cards.reduce((a,b)=>rrank(b.r)>rrank(a.r)?b:a);
+  const t=luckTier(luck);
+  const entry={ts:Date.now(),count:cards.length,bestT:best.t,bestR:best.r,bestId:best.id,luck,tier:t.n,tierC:t.c};
+  save.history=save.history||[]; save.history.unshift(entry); save.history=save.history.slice(0,20);
+  if(rrank(best.r)>=4){ save.streak=(save.streak||0)+1; } else { save.streak=0; }
+  save.streakBest=Math.max(save.streakBest||0, save.streak);
+  save.luckBest=Math.max(save.luckBest||0, luck);
+  persist(); renderHistory();
+}
+function renderHistory(){
+  const host=document.getElementById('hist'); if(!host) return;
+  const h=save.history||[];
+  document.getElementById('luckBestTxt').textContent=save.luckBest||0;
+  document.getElementById('streakBestTxt').textContent=save.streakBest||0;
+  if(!h.length){ host.innerHTML='<div class="hist-empty">还没有抽卡记录，抽一发试试手气吧 ★</div>'; return; }
+  host.innerHTML=h.map((e,i)=>{
+    const dt=new Date(e.ts); const time=(dt.getMonth()+1)+'/'+dt.getDate()+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+    const stk = (i===0 && save.streak>=2) ? ' · 🔥 连击 '+save.streak : '';
+    return `<div class="hitem" data-id="${e.bestId}">
+      <div class="hi-top"><span class="hi-rank" style="background:${e.tierC};color:#1a1405">${e.tier} ${e.luck}</span><span class="hi-time">${time} · ${e.count}连</span></div>
+      <div class="hi-best">${RARITY[e.bestR].star} ${e.bestT}</div>
+      <div class="hi-meta">${e.bestR} · 欧气 ${e.luck}${stk}</div></div>`;
+  }).join('');
+  host.querySelectorAll('.hitem').forEach(it=>{ it.addEventListener('click',()=>{ const c=ALL.find(x=>String(x.id)===String(it.dataset.id))||SEED.find(x=>String(x.id)===String(it.dataset.id)); if(c) openModal(c); }); });
+}
+/* ====== 收集进度环 ====== */
+function renderRings(){
+  const host=document.getElementById('rings'); if(!host) return;
+  const rs=["UR","SSR","SR","R","N"];
+  host.innerHTML=rs.map(r=>{
+    const pool=CARDS.filter(c=>c.r===r); const got=pool.filter(c=>save.owned[c.id]).length;
+    const pct=pool.length?got/pool.length:0;
+    const R=22,circ=2*Math.PI*R, off=circ*(1-pct);
+    const col=getComputedStyle(document.documentElement).getPropertyValue('--'+r.toLowerCase()).trim()||'#888';
+    return `<div class="ring" title="${r}: ${got}/${pool.length}"><svg width="54" height="54"><circle cx="27" cy="27" r="${R}" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="5"/><circle cx="27" cy="27" r="${R}" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/></svg><div class="rlab"><b style="color:${col}">${r}</b><span class="rk">${got}/${pool.length}</span></div></div>`;
+  }).join('');
+}
 
 /* ====== 数字滚动 ====== */
 function animateStats(prev){
@@ -528,10 +640,14 @@ function loopStars(){ sc.clearRect(0,0,stars.width,stars.height);
 loopStars();
 
 /* ====== 图鉴 ====== */
-let filterR="ALL";
+let filterR="ALL", albumQ="", albumSort="rarity";
 function updateAlbum(){
   const alb=document.getElementById("album"); alb.innerHTML="";
-  const list=filterR==="ALL"?CARDS:CARDS.filter(c=>c.r===filterR);
+  let list=filterR==="ALL"?CARDS.slice():CARDS.filter(c=>c.r===filterR);
+  if(albumQ){ const q=albumQ.toLowerCase(); list=list.filter(c=> ((c.t||'')+(c.src||'')+(c.dom||'')).toLowerCase().includes(q)); }
+  if(albumSort==="heat") list.sort((a,b)=>b.heat-a.heat);
+  else if(albumSort==="date") list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  else list.sort((a,b)=>rrank(b.r)-rrank(a.r));
   list.forEach(c=>{ const owned=!!save.owned[c.id]; const d=document.createElement("div");
     d.className="acard"+(owned?"":" locked"); d.dataset.r=c.r;
     d.innerHTML=owned?`<div class="a-front"><span class="a-r ${c.r}">${RARITY[c.r].star}</span><div class="a-t">${c.t}</div></div>`:`<div class="a-back">?</div>`;
@@ -542,6 +658,7 @@ function updateAlbum(){
     alb.appendChild(d); });
   const ownedInRange=Object.keys(save.owned).filter(id=>CARDS.some(c=>c.id==id)).length;
   document.getElementById("albumCount").textContent=`已收集 ${ownedInRange} / ${CARDS.length} 张`+(filterR!=="ALL"?`（${RARITY[filterR].name}）`:" · 当前范围");
+  renderRings();
 }
 function buildFilters(){ const f=document.getElementById("filters");
   [["ALL","全部"],["UR","UR"],["SSR","SSR"],["SR","SR"],["R","R"],["N","N"]].forEach(([k,lab])=>{
@@ -621,9 +738,9 @@ document.getElementById("btn10").addEventListener("click",drawTen);
 document.getElementById("btnShare").addEventListener("click",()=>{ if(lastPull) downloadShare(lastPull); else toast("先抽一次，再来分享吧"); });
 document.getElementById("btnSound").addEventListener("click",e=>{ save.sound=!save.sound; persist(); e.target.textContent="音效："+(save.sound?"开":"关"); if(save.sound) audio(); });
 document.getElementById("btnReduce").addEventListener("click",e=>{ REDUCE=!REDUCE; document.body.classList.toggle("reduce",REDUCE); e.target.textContent="动效："+(REDUCE?"精简":"全开"); });
-document.getElementById("btnReset").addEventListener("click",()=>{ if(!confirm("确定清空图鉴、成就与抽卡记录？此操作不可撤销。")) return;
-  save={total:0,ur:0,ssr:0,sr:0,r:0,n:0,pity:0,owned:{},ach:{},wish:null,wishMiss:0,sound:save.sound}; persist();
-  renderAch(); renderWish(); updateAlbum(); animateStats({total:0,ur:0,ssr:0,sr:0}); toast("已重置"); });
+document.getElementById("btnReset").addEventListener("click",()=>{ if(!confirm("确定清空图鉴、成就、运势与抽卡记录？此操作不可撤销。")) return;
+  save={total:0,ur:0,ssr:0,sr:0,r:0,n:0,pity:0,owned:{},ach:{},wish:null,wishMiss:0,sound:save.sound,luckBest:0,streak:0,streakBest:0,history:[]}; persist();
+  renderAch(); renderWish(); updateAlbum(); renderHistory(); animateStats({total:0,ur:0,ssr:0,sr:0}); toast("已重置"); });
 document.querySelectorAll(".ranges .chip").forEach(ch=>{ ch.addEventListener("click",()=>{ RANGE=+ch.dataset.r; document.querySelectorAll(".ranges .chip").forEach(x=>x.classList.remove("on")); ch.classList.add("on"); applyRange(); toast("已切换：过去 "+RANGE+" 天"); }); });
 document.getElementById("btnRefresh").addEventListener("click",()=>{ toast("正在刷新数据…"); loadData().then(()=>toast("数据已刷新")); });
 
@@ -641,6 +758,15 @@ document.getElementById("btnSound").textContent="音效："+(save.sound?"开":"�
 CARDS.forEach(c=>{ if(save.owned[c.id]) delete c._new; });
 const spot=document.getElementById('spot');
 if(spot){ addEventListener('pointermove',e=>{ spot.style.transform='translate('+e.clientX+'px,'+e.clientY+'px)'; }); }
+document.getElementById('albumSearch').addEventListener('input',e=>{ albumQ=e.target.value; updateAlbum(); });
+document.getElementById('albumSort').addEventListener('change',e=>{ albumSort=e.target.value; updateAlbum(); });
+renderHistory();
+addEventListener('keydown',e=>{ const tag=e.target.tagName; if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  if(e.code==='Space'){ e.preventDefault(); if(e.shiftKey) drawTen(); else drawSingle(); }
+  else if(e.key==='r'||e.key==='R'){ loadData().then(()=>toast('数据已刷新')); }
+  else if(e.key==='m'||e.key==='M'){ document.getElementById('btnSound').click(); }
+  else if(e.key==='/'){ e.preventDefault(); document.getElementById('albumSearch').focus(); }
+});
 loadData();
 </script>
 </body>
