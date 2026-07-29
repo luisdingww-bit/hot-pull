@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>全网热搜抽卡 · HOT PULL</title>
+<style>
+  :root{
+    --bg0:#0a0a14; --bg1:#12122a; --panel:rgba(22,22,46,.72);
+    --line:rgba(255,255,255,.08); --txt:#eef0ff; --sub:#9aa0c8;
+    --gold:#ffd54a; --orange:#ff8a3d; --purple:#b06bff; --blue:#4db5ff; --gray:#8b93b5;
+    --ur:#ffd54a; --ssr:#ff7a45; --sr:#b06bff; --r:#4db5ff; --n:#7f88ad;
+    --neon:#7af9ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+    color:var(--txt); background:var(--bg0); overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* animated gradient background */
+  .bg{position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(1200px 800px at 15% 10%, rgba(122,80,255,.18), transparent 60%),
+      radial-gradient(1000px 700px at 85% 20%, rgba(77,181,255,.16), transparent 60%),
+      radial-gradient(900px 700px at 50% 100%, rgba(255,138,61,.12), transparent 60%),
+      linear-gradient(160deg,var(--bg0),var(--bg1));
+    animation:bgshift 16s ease-in-out infinite alternate;
+  }
+  @keyframes bgshift{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(22deg)}}
+  #stars{position:fixed;inset:0;z-index:-1;opacity:.55}
+  #fx{position:fixed;inset:0;z-index:60;pointer-events:none}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 16px 70px}
+
+  /* ticker */
+  .ticker{overflow:hidden;white-space:nowrap;border:1px solid var(--line);
+    background:rgba(0,0,0,.25);border-radius:12px;margin-bottom:14px;backdrop-filter:blur(8px)}
+  .ticker .lab{flex:0 0 auto;padding:8px 12px;background:linear-gradient(90deg,#ff5d73,#ff9f43);
+    font-weight:800;color:#1a0d00;border-right:1px solid var(--line);display:inline-block}
+  .ticker .track{display:inline-block;padding:8px 0;animation:scroll 38s linear infinite}
+  .ticker .track span{margin:0 22px;color:var(--sub);font-size:13.5px}
+  .ticker .track b{color:#ffd9a8;font-weight:700}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  header.top{text-align:center;margin:6px 0 18px}
+  header.top h1{font-size:clamp(26px,5vw,44px);font-weight:900;letter-spacing:1px;
+    background:linear-gradient(90deg,#ffd54a,#ff7a45,#b06bff,#4db5ff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 4px 18px rgba(176,107,255,.35))}
+  header.top p{color:var(--sub);margin-top:8px;font-size:13.5px}
+  header.top .meta{margin-top:6px;font-size:12px;color:#6b719b}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 10px;text-align:center;backdrop-filter:blur(10px)}
+  .stat .v{font-size:22px;font-weight:900}
+  .stat .k{font-size:11.5px;color:var(--sub);margin-top:3px}
+  .stat.ur .v{color:var(--ur)} .stat.ssr .v{color:var(--ssr)}
+  .stat.sr .v{color:var(--sr)} .stat.r .v{color:var(--r)}
+  @media(max-width:680px){.stats{grid-template-columns:repeat(3,1fr)}}
+
+  /* controls */
+  .controls{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:stretch;margin-bottom:10px}
+  .btn{cursor:pointer;border:none;border-radius:14px;padding:14px 22px;font-size:16px;font-weight:800;
+    color:#0a0a14;background:linear-gradient(135deg,#ffd54a,#ff8a3d);transition:.18s;position:relative;overflow:hidden}
+  .btn.ten{background:linear-gradient(135deg,#b06bff,#7a8bff);color:#fff}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.4)}
+  .btn:active{transform:translateY(0)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn small{display:block;font-size:11px;font-weight:600;opacity:.85;margin-top:2px}
+
+  .pity{display:flex;align-items:center;gap:10px;justify-content:center;margin:6px 0 18px;font-size:13px;color:var(--sub)}
+  .pity .bar{width:min(420px,70vw);height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--line)}
+  .pity .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd54a,#ff7a45);transition:width .4s}
+
+  /* result area */
+  .stage{min-height:120px;display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:26px}
+  .hint{color:var(--sub);font-size:14px;margin:40px auto;text-align:center;width:100%}
+
+  .card{width:150px;height:212px;perspective:1000px;cursor:pointer;flex:0 0 auto}
+  .card .inner{position:relative;width:100%;height:100%;transition:transform .7s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+  .card.flip .inner{transform:rotateY(180deg)}
+  .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+  .back{background:
+      radial-gradient(circle at 50% 38%, rgba(122,249,255,.25), transparent 55%),
+      linear-gradient(160deg,#1a1b3a,#0d0e22);
+    display:flex;align-items:center;justify-content:center;flex-direction:column}
+  .back .orb{width:74px;height:74px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#7af9ff 30%,#5b6bff 70%,#1a1b6a);
+    box-shadow:0 0 30px rgba(122,249,255,.6);animation:pulse 2.4s ease-in-out infinite}
+  .back .bk{margin-top:14px;font-size:12px;color:#9fd6ff;letter-spacing:3px}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+  .front{transform:rotateY(180deg);background:linear-gradient(165deg,#15162e,#0e0f24);
+    padding:10px;display:flex;flex-direction:column;position:relative}
+  .card[data-r="UR"] .front{border:1.5px solid var(--ur);box-shadow:0 0 26px rgba(255,213,74,.5);
+    background:linear-gradient(165deg,#2a2410,#15131f)}
+  .card[data-r="SSR"] .front{border:1.5px solid var(--ssr);box-shadow:0 0 22px rgba(255,122,69,.45)}
+  .card[data-r="SR"] .front{border:1.5px solid var(--sr);box-shadow:0 0 18px rgba(176,107,255,.4)}
+  .card[data-r="R"] .front{border:1.5px solid var(--r)}
+  .card[data-r="N"] .front{border:1.5px solid var(--n)}
+
+  .front .rtag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:900;
+    padding:2px 8px;border-radius:99px;width:fit-content;letter-spacing:.5px}
+  .front .rtag.UR{background:linear-gradient(90deg,#ffe07a,#ffae3d);color:#3a2600}
+  .front .rtag.SSR{background:linear-gradient(90deg,#ff9a6b,#ff5a3c);color:#3a0d00}
+  .front .rtag.SR{background:linear-gradient(90deg,#c98bff,#8a5bff);color:#1c0033}
+  .front .rtag.R{background:linear-gradient(90deg,#7cc6ff,#3d8bff);color:#001a33}
+  .front .rtag.N{background:linear-gradient(90deg,#9aa2c4,#6b739a);color:#0b0e1f}
+  .front .dom{position:absolute;top:10px;right:10px;font-size:10px;color:var(--sub);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  .front .ftitle{margin-top:14px;font-size:15px;font-weight:800;line-height:1.32;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .front .src{margin-top:auto;font-size:11px;color:#bcd0ff;background:rgba(122,160,255,.12);
+    border:1px solid rgba(122,160,255,.25);padding:2px 7px;border-radius:6px;width:fit-content}
+  .front .heat{margin-top:7px;font-size:10.5px;color:var(--sub);display:flex;align-items:center;gap:6px}
+  .front .heat .hb{width:54px;height:6px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+  .front .heat .hb i{display:block;height:100%;background:linear-gradient(90deg,#ffd54a,#ff5a3c)}
+
+  @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.07)}100%{transform:scale(1);opacity:1}}
+  .card.reveal .front{animation:pop .5s ease}
+
+  /* big highlight (UR/SSR on reveal) */
+  .card[data-r="UR"].flip .inner{animation:urspin .9s ease}
+  @keyframes urspin{0%{transform:rotateY(0) scale(.8)}50%{transform:rotateY(180deg) scale(1.12)}100%{transform:rotateY(180deg) scale(1)}}
+
+  /* result banner */
+  .banner{text-align:center;margin:0 auto 22px;padding:14px 18px;border-radius:14px;
+    background:var(--panel);border:1px solid var(--line);max-width:640px;backdrop-filter:blur(10px)}
+  .banner .big{font-size:20px;font-weight:900}
+  .banner .small{color:var(--sub);font-size:13px;margin-top:5px}
+
+  /* album */
+  .sec-title{font-size:20px;font-weight:900;margin:30px 0 6px;display:flex;align-items:center;gap:10px}
+  .sec-title .ln{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+  .sec-sub{color:var(--sub);font-size:13px;margin-bottom:14px}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{cursor:pointer;font-size:12.5px;padding:6px 12px;border-radius:99px;border:1px solid var(--line);
+    background:rgba(255,255,255,.03);color:var(--sub);transition:.15s}
+  .chip.on{background:linear-gradient(135deg,#ffd54a,#ff8a3d);color:#1a0d00;font-weight:800;border-color:transparent}
+  .chip:hover{color:var(--txt)}
+
+  .album{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+  .acard{aspect-ratio:3/4.2;border-radius:11px;border:1px solid var(--line);position:relative;overflow:hidden;
+    cursor:pointer;transition:.18s;background:linear-gradient(165deg,#15162e,#0e0f24)}
+  .acard:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.4)}
+  .acard.locked{filter:grayscale(1) brightness(.5)}
+  .acard.locked .a-front{display:none}
+  .acard .a-back{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:repeating-linear-gradient(45deg,#16172f,#16172f 8px,#1c1d3a 8px,#1c1d3a 16px);color:#4a4f73;font-size:24px}
+  .acard .a-front{padding:8px;display:flex;flex-direction:column}
+  .acard .a-r{font-size:10px;font-weight:900;padding:1px 6px;border-radius:99px;width:fit-content}
+  .acard[data-r="UR"] .a-front{border-top:3px solid var(--ur)} .a-r.UR{background:#ffe07a;color:#3a2600}
+  .acard[data-r="SSR"] .a-front{border-top:3px solid var(--ssr)} .a-r.SSR{background:#ff9a6b;color:#3a0d00}
+  .acard[data-r="SR"] .a-front{border-top:3px solid var(--sr)} .a-r.SR{background:#c98bff;color:#1c0033}
+  .acard[data-r="R"] .a-front{border-top:3px solid var(--r)} .a-r.R{background:#7cc6ff;color:#001a33}
+  .acard[data-r="N"] .a-front{border-top:3px solid var(--n)} .a-r.N{background:#9aa2c4;color:#0b0e1f}
+  .acard .a-t{font-size:11.5px;font-weight:700;margin-top:8px;line-height:1.3;
+    display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .acard .a-new{position:absolute;top:5px;right:5px;background:#ff4d6d;color:#fff;font-size:9px;font-weight:800;
+    padding:1px 5px;border-radius:6px;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:.35}}
+  .album-count{color:var(--sub);font-size:13px;margin-top:12px;text-align:center}
+
+  /* modal */
+  .mask{position:fixed;inset:0;background:rgba(4,4,12,.7);backdrop-filter:blur(4px);z-index:80;
+    display:none;align-items:center;justify-content:center;padding:18px}
+  .mask.on{display:flex}
+  .modal{width:min(560px,94vw);max-height:86vh;overflow:auto;background:linear-gradient(165deg,#1a1b36,#101124);
+    border:1px solid var(--line);border-radius:18px;padding:22px;position:relative}
+  .modal .close{position:absolute;top:14px;right:16px;cursor:pointer;color:var(--sub);font-size:22px;line-height:1}
+  .modal .m-r{display:inline-block;font-size:12px;font-weight:900;padding:3px 10px;border-radius:99px}
+  .modal h2{font-size:21px;margin:14px 0 4px;line-height:1.35}
+  .modal .m-meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+  .modal .m-meta span{font-size:12px;color:#bcd0ff;background:rgba(122,160,255,.12);border:1px solid rgba(122,160,255,.25);padding:3px 9px;border-radius:8px}
+  .modal .m-desc{color:#d6dbf5;font-size:14.5px;line-height:1.7}
+  .modal .m-heat{margin-top:14px;display:flex;align-items:center;gap:10px;color:var(--sub);font-size:13px}
+  .modal .m-heat .hb{width:160px;height:9px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+  .modal .m-heat .hb i{display:block;height:100%;background:linear-gradient(90deg,#ffd54a,#ff5a3c)}
+  .modal .m-src{margin-top:14px;font-size:12px;color:#6b719b}
+
+  footer.foot{text-align:center;color:#5a5f86;font-size:12px;margin-top:40px;line-height:1.7}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);z-index:90;
+    background:rgba(20,20,44,.95);border:1px solid var(--line);color:var(--txt);padding:11px 18px;border-radius:12px;
+    font-size:13.5px;opacity:0;transition:.3s;pointer-events:none}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<canvas id="stars"></canvas>
+<canvas id="fx"></canvas>
+
+<div class="wrap">
+  <div class="ticker">
+    <span class="lab">实时热搜</span>
+    <span class="track" id="tickerTrack"></span>
+  </div>
+
+  <header class="top">
+    <h1>全网热搜抽卡 · HOT PULL</h1>
+    <p>把此刻整个互联网最热的话题，变成可以抽的卡。微博 · 抖音 · 百度 · X · TikTok · Google · Reddit</p>
+    <div class="meta">数据快照：2026-07-29 ｜ 卡池 46 张 · 5 级稀有度 · 概率保底 10 连必出 SR 以上</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="v" id="sTotal">0</div><div class="k">累计抽卡</div></div>
+    <div class="stat ur"><div class="v" id="sUR">0</div><div class="k">UR 传说</div></div>
+    <div class="stat ssr"><div class="v" id="sSSR">0</div><div class="k">SSR 超稀有</div></div>
+    <div class="stat sr"><div class="v" id="sSR">0</div><div class="k">SR 稀有</div></div>
+    <div class="stat"><div class="v" id="sRate">0%</div><div class="k">SR+ 出货率</div></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="btn1">单抽<small>抽 1 张</small></button>
+    <button class="btn ten" id="btn10">十连<small>必出 SR 以上</small></button>
+    <button class="btn ghost" id="btnSound">音效：开</button>
+    <button class="btn ghost" id="btnReset">重置图鉴</button>
+  </div>
+  <div class="pity">
+    <span>保底进度</span>
+    <span class="bar"><i id="pityBar"></i></span>
+    <span id="pityTxt">0 / 10</span>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="hint">点击「单抽」或「十连」，抽走此刻全网最热的话题 ★</div>
+  </div>
+
+  <div class="sec-title">热搜图鉴 <span class="ln"></span></div>
+  <div class="sec-sub">已解锁的卡会记录你抽到的真实热搜；未解锁显示为剪影。点击卡片查看完整来龙去脉。</div>
+  <div class="filters" id="filters"></div>
+  <div class="album" id="album"></div>
+  <div class="album-count" id="albumCount"></div>
+
+  <footer class="foot">
+    内容为 2026-07-29 各平台真实热搜/趋势整理，仅供娱乐演示。<br/>
+    稀有度由话题全网热度与跨平台扩散度综合标定，抽卡结果随机抽取。
+  </footer>
+</div>
+
+<div class="mask" id="mask">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ====== 实时热搜卡池（2026-07-29 真实趋势整理） ====== */
+const RARITY = {
+  UR:  {w:2,  name:"传说 UR",  star:"★5"},
+  SSR: {w:6,  name:"超稀有 SSR",star:"★4"},
+  SR:  {w:20, name:"稀有 SR",  star:"★3"},
+  R:   {w:38, name:"普通 R",   star:"★2"},
+  N:   {w:34, name:"N",        star:"★1"}
+};
+const CARDS = [
+  // UR
+  {id:1, t:"AI演员方桃子、周以衡爆火", src:"微博 / 百度", dom:"娱乐·科技", r:"UR", heat:99,
+   d:"AI短剧《被裁掉的女孩》播放破 2 亿，两位虚拟主角社交账号粉丝合计破 50 万，话题「两个AI演员比内娱待爆艺人都火」霸榜热搜 8 小时，被视为第一代 AI 明星出圈样本，引发「AI造星」伦理讨论。"},
+  {id:2, t:"2026 世界杯决赛 西班牙 vs 阿根廷", src:"全平台", dom:"体育", r:"UR", heat:98,
+   d:"美加墨世界杯决赛 7 月 19 日落地纽约 MetLife 体育场，西班牙对阵阿根廷，是年度最大单日社媒事件；微博全场景话题阅读量 576.4 亿、讨论量 2.9 亿，超越上届卡塔尔世界杯。"},
+  {id:3, t:"长鑫科技登陆科创板 市值 3.28 万亿", src:"微博 / 百度", dom:"财经·科技", r:"UR", heat:97,
+   d:"长鑫科技 7 月 27 日登陆科创板，首日暴涨 465.82%，市值升至 3.28 万亿元成 A 股第一；小米等产业链公司获配浮盈超 7 亿，带火「长鑫批量造富」「长鑫上市碧桂园痛失470亿」等热议。"},
+  {id:4, t:"日本熊本县 7.1 级地震", src:"微博 / 川观", dom:"国际", r:"UR", heat:96,
+   d:"7 月 28 日日本熊本县附近发生 7.1 级地震，多人死亡、房屋倒塌、交通受阻，上海等地有震感；「地震50年后突然搜到已故父亲名字」等话题戳中无数网友。"},
+  {id:5, t:"Grok 4.5 发布", src:"X (Twitter)", dom:"科技", r:"UR", heat:95,
+   d:"马斯克旗下 xAI 的 Grok 4.5 登上 X 美国热搜，同期「Grok Build」「SpaceXAI」也一并冲榜，AI 军备竞赛成为美国社媒当周核心议题。"},
+  // SSR
+  {id:6, t:"诺兰《奥德赛》上映", src:"TikTok", dom:"影视", r:"SSR", heat:92,
+   d:"克里斯托弗·诺兰的《The Odyssey》7 月 17 日上映，全明星阵容（马特·达蒙、安妮·海瑟薇、赞达亚、汤姆·赫兰德、罗伯特·帕丁森），粉丝反应与解析内容在 TikTok 持续霸屏。"},
+  {id:7, t:"《蜘蛛侠：全新一天》预售破纪录", src:"TikTok / X", dom:"影视", r:"SSR", heat:91,
+   d:"汤姆·赫兰德主演的《Spider-Man: Brand New Day》定档 7 月 31 日，成为五年来预售最火爆的电影；与阿丽亚娜·格兰德专辑同日，被网友戏称「Grande-Man Day」。"},
+  {id:8, t:"显卡涨价 GDDR7 每 2G 涨近 20 美元", src:"微博", dom:"科技", r:"SSR", heat:88,
+   d:"数码博主爆料 GDDR7 显存每 2G 涨价近 20 美元、单卡成本或增 560 元，京东多款显卡临时下架，玩家焦虑拉满，「显卡涨价」登微博热搜。"},
+  {id:9, t:"东野圭吾因大肠癌去世", src:"微博 / 百度", dom:"文化", r:"SSR", heat:90,
+   d:"日本推理作家东野圭吾 7 月 23 日因大肠癌去世、终年 68 岁，「肠癌很多人发现就是中晚期」等健康提醒冲上热搜，医生建议 40 岁以上做人生第一次肠镜。"},
+  {id:10, t:"暑期档票房破 60 亿", src:"微博", dom:"娱乐", r:"SSR", heat:87,
+   d:"截至 7 月 28 日 2026 暑期档电影总票房（含预售）突破 60 亿元超去年同期；国家电影局推动影院向「观影+社交+消费」综合空间升级，XR 体验、文创市集、室内攀岩纷纷进场。"},
+  {id:11, t:"塔斯汀手扒鸡缩水遭全网吐槽", src:"微博", dom:"社会·消费", r:"SSR", heat:86,
+   d:"「#塔斯汀手扒鸡仅比手套包装袋大一圈#」登上热搜，消费者实测净重仅 300 克出头，与「足量整鸡」宣传差距悬殊，黑猫投诉涌现维权凭证，品牌口碑承压。"},
+  {id:12, t:"广东医生群发极端请假言论", src:"微博", dom:"社会", r:"SSR", heat:85,
+   d:"南方医科大学珠江医院一医师在工作群两度发布「除非家里死人不要临时请假」等言论登热搜第二，网友分歧于「言辞冷漠」与「急诊人手紧缺现实压力」之间。"},
+  {id:13, t:"哈兰德大战巴西", src:"百度", dom:"体育", r:"SSR", heat:84,
+   d:"世界杯赛场哈兰德领衔挪威对阵巴西，百度热搜「哈兰德大战巴西前从头开始备战」；挪威门将扑出巴西点球成焦点，巴西 5 次世界杯冠军却从未赢过挪威被广泛讨论。"},
+  {id:14, t:"雷军打新长鑫浮盈 7 亿", src:"微博", dom:"财经", r:"SSR", heat:83,
+   d:"「雷军打新长鑫科技浮盈7亿」登热搜，源于长鑫上市首日大涨；小米高管回应称系公司投资行为、不能混同个人财富，半导体产业链多家公司均获配浮盈超 7 亿。"},
+  {id:15, t:"DeepSeek 回应性能下降", src:"百度", dom:"科技", r:"SSR", heat:82,
+   d:"「出现性能下降问题 DeepSeek 回应」登上百度热搜，国产大模型周调用量被指占全球三分之二的背景下，模型稳定性成为用户关注焦点。"},
+  // SR
+  {id:16, t:"阿丽亚娜·格兰德专辑《petal》", src:"TikTok", dom:"音乐", r:"SR", heat:80,
+   d:"阿丽亚娜·格兰德新专辑《petal》定档 7 月 31 日，与《蜘蛛侠：全新一天》同日引爆「Grande-Man Day」 anticipation 内容，TikTok 提前进入期待模式。"},
+  {id:17, t:"Charli xcx / Tyla / The Strokes 三专同发", src:"TikTok", dom:"音乐", r:"SR", heat:78,
+   d:"7 月 24 日 Charli xcx、Tyla、The Strokes 三张专辑同日发行，TikTok 涌现大量新品反应与翻唱内容，音乐趋势单日集中爆发。"},
+  {id:18, t:"《沙丘》第三部 Dune: Part Three", src:"X (Twitter)", dom:"影视", r:"SR", heat:79,
+   d:"《Dune Part Three》登上 X 美国热搜，维伦纽瓦续作牵动全球影迷，「Chani」「Part Three」等角色与剧情词条同步升温。"},
+  {id:19, t:"《辐射》Fallout 剧集热度", src:"X (Twitter)", dom:"影视", r:"SR", heat:77,
+   d:"《Fallout》新动态登上 X 美国热搜，Bethesda 与「New Vegas」「Obsidian」等词条联动，游戏改编剧集持续吸粉。"},
+  {id:20, t:"《镀金时代》The Gilded Age", src:"X (Twitter)", dom:"影视", r:"SR", heat:75,
+   d:"HBO《The Gilded Age》新季登上 X 美国热搜，「#TheGildedAge」「Emmy」等词条带动奖项季讨论。"},
+  {id:21, t:"F1 比利时大奖赛 安东内利夺冠", src:"Google / 微博", dom:"体育", r:"SR", heat:81,
+   d:"F1 比利时站安东内利击败勒克莱尔夺冠，汉密尔顿撞到法拉利技师面临调查；维斯塔潘 P2，「f1 live」在多国 Google Trends 冲到 1000+ 搜索量。"},
+  {id:22, t:"国足 0-0 战平泰国", src:"百度 / 抖音", dom:"体育", r:"SR", heat:74,
+   d:"国足主场 0 比 0 战平泰国队，全场射门 24 次却未能破门，主帅邵佳一称「欠缺一些运气」，相关话题登上百度、抖音热搜。"},
+  {id:23, t:"金鹰奖提名名单", src:"微博", dom:"娱乐", r:"SR", heat:73,
+   d:"金鹰奖提名名单连续多日登上微博热搜，7 月 27 日、28 日两轮均进入全天综合前排，剧集与人气角逐引发粉丝拉票。"},
+  {id:24, t:"谢娜演唱会", src:"微博", dom:"娱乐", r:"SR", heat:72,
+   d:"狗仔曝《浪姐》大热 CP 恋情、谢娜演唱会主办方回应等文娱话题连日登上微博热搜，明星动态与粉丝经济持续高热。"},
+  {id:25, t:"微软 SharePoint 漏洞", src:"Google", dom:"科技", r:"SR", heat:76,
+   d:"「microsoft sharepoint vulnerability」登上 Google 美国趋势，企业级 SharePoint 安全漏洞引发 IT 与运维圈广泛关注与补丁讨论。"},
+  {id:26, t:"宇树机器人谁在买", src:"头条", dom:"科技", r:"SR", heat:71,
+   d:"「谁在买宇树机器人」登上头条热搜，人形机器人从展台走向产线/家庭的应用落地成为新消费与产业焦点。"},
+  {id:27, t:"DOTA2 暗黑狂欢活动", src:"Reddit", dom:"游戏", r:"SR", heat:70,
+   d:"DOTA2 玩家社区热议「暗黑狂欢」活动与百戏大王剧情，玩家自发制作 PVE 地图、解包日志刷屏 Reddit，社区二创空前活跃。"},
+  // R
+  {id:28, t:"TikTok「Food Jutsu」美食结印", src:"TikTok", dom:"互联网", r:"R", heat:66,
+   d:"借《咒术回战》结印手势，cut 到凭空出现的美食，单月破 3600 万帖子，被 Epidemic Sound 评为 6 月全平台第一趋势，Idris Elba、Keke Palmer 都用过。"},
+  {id:29, t:"「Bangladesh」神曲洗脑", src:"TikTok", dom:"音乐", r:"R", heat:65,
+   d:"Ian McConnell 的 49 秒《Bangladesh》以「你从不带我去孟加拉」开场，要求一路升级到香肠、油、复仇饮料，SZA、Chance、Lizzo 都来评论写续命 verse。"},
+  {id:30, t:"「Not Very Nonchalant」反淡人潮流", src:"TikTok", dom:"互联网", r:"R", heat:64,
+   d:"17 岁博主 Trace Young 的「我不喜欢故作淡定，为何要藏起神给的快乐」原声获百万赞，创作者纷纷展示真实快乐，被视为对「nonchalant 时代」的反叛。"},
+  {id:31, t:"Hot Dog Summer 热狗之夏", src:"TikTok", dom:"互联网", r:"R", heat:63,
+   d:"《律政俏佳人2》「你像七月四日，让我超想吃热狗」台词翻红，Peacock、HBO Max 官方下场，餐饮零售品牌借独立日氛围玩梗。"},
+  {id:32, t:"感冒灵纳入禁驾清单", src:"微博", dom:"社会", r:"R", heat:62,
+   d:"「感冒灵正式纳入禁驾清单」登上微博热搜，含特定成分的感冒药被提示服药后驾车的安全风险，引发用药科普。"},
+  {id:33, t:"无锡高温登顶全国第一", src:"微博", dom:"社会", r:"R", heat:61,
+   d:"7 月 29 日早无锡以 31.5℃ 再登全国高温榜首，气象台发布高温黄色预警，未来一周副高控制下最高温持续 35℃ 以上。"},
+  {id:34, t:"南昌地铁男子脱鞋躺卧", src:"微博", dom:"社会", r:"R", heat:60,
+   d:"江西南昌一男子在地铁车厢脱鞋躺卧、身旁小朋友围观，不文明行为引发「太没素质」吐槽，公共空间文明再成话题。"},
+  {id:35, t:"张桂梅第 16 次送考", src:"网易", dom:"社会", r:"R", heat:59,
+   d:"张桂梅第 16 次送考，早餐吃下六七种药物、与学生高唱《没有共产党就没有新中国》，感动全网，相关报道登上网易热榜。"},
+  {id:36, t:"高考结束 青春不散", src:"抖音", dom:"社会", r:"R", heat:58,
+   d:"「高考结束 青春不散」「高考后的第一条抖音」等话题在抖音刷屏，葛军解析数学、考生写高考作文等全民记忆被集中唤醒。"},
+  {id:37, t:"朱雀 2 号：没信号也能刷视频", src:"百度", dom:"科技", r:"R", heat:57,
+   d:"「没信号也能刷视频？朱雀2号干了件大事」登上百度热搜，卫星直连相关能力引发对通信边界的讨论。"},
+  {id:38, t:"「深圳全域开放无人驾驶」系误读", src:"百度", dom:"科技", r:"R", heat:56,
+   d:"「深圳全域开放无人驾驶」被辟谣为误读，关于自动驾驶落地范围的讨论在百度热搜持续发酵。"},
+  {id:39, t:"石油杯 Pari 夺冠", src:"Reddit", dom:"游戏", r:"R", heat:55,
+   d:"DOTA2 石油杯 Pari Vision 3-1 战胜 BB 夺冠，Puppey 执教 6 个月把队伍带成最强；但 325K 收视创历史新低，被指与同期世界杯撞车。"},
+  // N
+  {id:40, t:"葡萄牙总统为 C 罗授旗", src:"抖音", dom:"体育", r:"N", heat:48,
+   d:"葡萄牙总统为 C 罗授旗出征，相关画面登上抖音热搜，「C罗无世界杯冠军遭航空公司嘲讽」也曾在微博引发讨论。"},
+  {id:41, t:"U23 国足 3-0 胜塔吉克斯坦", src:"百度", dom:"体育", r:"N", heat:47,
+   d:"U23 国足 3 比 0 再胜塔吉克斯坦队，与成年国足 0-0 泰国形成对比，年轻一代表现被百度热搜聚焦。"},
+  {id:42, t:"巴西 vs 挪威 点球大战", src:"百度", dom:"体育", r:"N", heat:46,
+   d:"世界杯巴西对挪威，挪威门将立功扑出巴西点球，百度热搜「挪威门将立功 巴西点球被扑」「巴西5次夺冠却从未赢过挪威」。"},
+  {id:43, t:"特朗普威胁打击伊朗核设施", src:"川观", dom:"国际", r:"N", heat:45,
+   d:"美国总统特朗普威胁若美伊无法达成协议将打击伊朗核设施，中东局势与霍尔木兹海峡航运机制成为国际焦点。"},
+  {id:44, t:"X 热搜：H-1B 签证", src:"X (Twitter)", dom:"国际", r:"N", heat:44,
+   d:"「H-1B」登上 X 美国热搜，移民与签证政策再次成为美国社媒热议的政策议题。"},
+  {id:45, t:"「I Treated You Bad」MJ 混音舞", src:"TikTok", dom:"音乐", r:"N", heat:43,
+   d:"在 MJ 式唱腔上叠现代 808 的 trap remix 舞蹈在 TikTok 走红，三条无关创作者的同格式视频重复出现，单条点赞 46 万。"},
+  {id:46, t:"《摩尔之路》Moana", src:"X (Twitter)", dom:"影视", r:"N", heat:42,
+   d:"迪士尼《Moana》相关新动态登上 X 美国热搜，「Zendaya」「Dune」等同档影视词条带动动画 IP 讨论。"}
+];
+
+/* ====== 状态与持久化 ====== */
+const SAVE_KEY = "hotpull_save_v1";
+let save = loadSave();
+function loadSave(){
+  try{ const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if(s) return s; }catch(e){}
+  return {total:0, ur:0, ssr:0, sr:0, r:0, n:0, pity:0, owned:{}, sound:true};
+}
+function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
+
+/* ====== 音效（Web Audio，无外部资源） ====== */
+let actx = null;
+function audio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return actx; }
+function beep(freq, dur, type="sine", vol=0.18, when=0){
+  if(!save.sound) return; const ac = audio(); if(!ac) return;
+  const t = ac.currentTime + when;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+}
+function sndTick(){ beep(520,0.08,"triangle",0.12); }
+function sndReveal(r){
+  if(r==="UR"){ [523,659,784,1046].forEach((f,i)=>beep(f,0.5,"sawtooth",0.16,i*0.09)); }
+  else if(r==="SSR"){ [523,659,880].forEach((f,i)=>beep(f,0.4,"triangle",0.15,i*0.08)); }
+  else if(r==="SR"){ beep(440,0.3,"triangle",0.14); beep(660,0.3,"triangle",0.12,0.06); }
+  else { beep(380,0.18,"sine",0.1); }
+}
+
+/* ====== 抽卡逻辑 ====== */
+function rollRarity(){
+  const total = Object.values(RARITY).reduce((a,o)=>a+o.w,0);
+  let x = Math.random()*total;
+  for(const k in RARITY){ x -= RARITY[k].w; if(x<=0) return k; }
+  return "N";
+}
+function pickCard(rarity){
+  const pool = CARDS.filter(c=>c.r===rarity);
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function drawOne(){
+  const r = rollRarity();
+  return pickCard(r);
+}
+function drawMany(n){
+  const res = [];
+  let hasSSRplus = false;
+  for(let i=0;i<n;i++){ const c = drawOne(); res.push(c); if(c.r==="UR"||c.r==="SSR") hasSSRplus=true; }
+  // 保底：10 连必出 SR 以上
+  if(n>=10 && !hasSSRplus){
+    const idx = Math.floor(Math.random()*n);
+    res[idx] = pickCard("SR");
+  }
+  return res;
+}
+
+/* ====== 渲染抽卡结果 ====== */
+const stage = document.getElementById("stage");
+let busy = false;
+function rarityRank(r){ return ({UR:5,SSR:4,SR:3,R:2,N:1})[r]; }
+
+function renderDraw(cards, isTen){
+  if(busy) return; busy = true;
+  audio(); // unlock on gesture
+  stage.innerHTML = "";
+  const order = cards.map((c,i)=>i);
+  // 计算最佳稀有度索引，放在最后揭晓制造悬念
+  let bestIdx = 0;
+  cards.forEach((c,i)=>{ if(rarityRank(c.r)>rarityRank(cards[bestIdx].r)) bestIdx=i; });
+  if(isTen){ const b = order.indexOf(bestIdx); order.splice(b,1); order.push(bestIdx); }
+
+  const cardEls = cards.map((c,i)=>{
+    const div = document.createElement("div");
+    div.className = "card"; div.dataset.r = c.r; div.dataset.id = c.id;
+    div.innerHTML = `
+      <div class="inner">
+        <div class="face back"><div class="orb"></div><div class="bk">HOT PULL</div></div>
+        <div class="face front">
+          <span class="rtag ${c.r}">${RARITY[c.r].star} ${RARITY[c.r].name}</span>
+          <span class="dom">${c.dom}</span>
+          <div class="ftitle">${c.t}</div>
+          <span class="src">${c.src}</span>
+          <div class="heat">热度 <span class="hb"><i style="width:${c.heat}%"></i></span> ${c.heat}</div>
+        </div>
+      </div>`;
+    div.addEventListener("click", ()=>openModal(c));
+    stage.appendChild(div);
+    return div;
+  });
+
+  let i = 0;
+  const revealNext = ()=>{
+    if(i>=order.length){ finishDraw(cards); return; }
+    const el = cardEls[order[i]];
+    el.classList.add("flip","reveal");
+    const c = cards[order[i]];
+    sndReveal(c.r);
+    if(c.r==="UR"||c.r==="SSR") burst(el, c.r);
+    if(isTen && order[i]===bestIdx && (c.r==="UR"||c.r==="SSR")) bannerBig(c);
+    i++;
+    setTimeout(revealNext, isTen?200:260);
+  };
+
+  // 更新统计
+  save.total += cards.length;
+  cards.forEach(c=>{ save[c.r.toLowerCase()] = (save[c.r.toLowerCase()]||0)+1; });
+  if(cards.length>=10){ save.pity = 0; } else { save.pity = (save.pity + cards.length) % 10; }
+  cards.forEach(c=>{ if(!save.owned[c.id]) save.owned[c.id]=1; });
+  persist(); updateStats(); updateAlbum();
+
+  setTimeout(revealNext, 260);
+}
+
+function finishDraw(cards){
+  busy = false;
+  const best = cards.reduce((a,b)=> rarityRank(b.r)>rarityRank(a.r)?b:a);
+  toast(`抽到 ${cards.length} 张 · 最高 ${RARITY[best.r].name}`);
+}
+
+function bannerBig(c){
+  const old = document.getElementById("bigBanner");
+  if(old) old.remove();
+  const b = document.createElement("div"); b.className="banner"; b.id="bigBanner";
+  b.innerHTML = `<div class="big" style="color:${c.r==='UR'?'var(--ur)':'var(--ssr)'}">${RARITY[c.r].star} ${RARITY[c.r].name} 出货！</div>
+    <div class="small">${c.t} · ${c.src}</div>`;
+  stage.parentNode.insertBefore(b, stage);
+}
+
+/* ====== 粒子特效 ====== */
+const fx = document.getElementById("fx");
+const fxc = fx.getContext("2d");
+let parts = [];
+function resizeFx(){ fx.width = innerWidth; fx.height = innerHeight; }
+resizeFx(); addEventListener("resize", resizeFx);
+function burst(el, r){
+  const rect = el.getBoundingClientRect();
+  const cx = rect.left+rect.width/2, cy = rect.top+rect.height/2;
+  const colors = r==="UR"? ["#ffd54a","#ff7a45","#b06bff","#4db5ff","#7af9ff"]
+                        : ["#ff8a3d","#ffd54a","#ff5a3c"];
+  const n = r==="UR"?80:50;
+  for(let i=0;i<n;i++){
+    const a = Math.random()*Math.PI*2, sp = 2+Math.random()*6;
+    parts.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,
+      life:1, c:colors[i%colors.length], s:2+Math.random()*3});
+  }
+}
+function loopFx(){
+  fxc.clearRect(0,0,fx.width,fx.height);
+  parts = parts.filter(p=>p.life>0);
+  parts.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life-=0.018;
+    fxc.globalAlpha=Math.max(p.life,0); fxc.fillStyle=p.c;
+    fxc.beginPath(); fxc.arc(p.x,p.y,p.s,0,7); fxc.fill();
+  });
+  fxc.globalAlpha=1; requestAnimationFrame(loopFx);
+}
+loopFx();
+
+/* ====== 背景星点 ====== */
+const stars = document.getElementById("stars"); const sc = stars.getContext("2d");
+let dots=[];
+function resizeStars(){ stars.width=innerWidth; stars.height=innerHeight;
+  dots = Array.from({length:Math.min(90, innerWidth/14)},()=>({x:Math.random()*stars.width,y:Math.random()*stars.height,r:Math.random()*1.6+0.4,v:Math.random()*0.4+0.1})); }
+resizeStars(); addEventListener("resize",resizeStars);
+function loopStars(){ sc.clearRect(0,0,stars.width,stars.height);
+  dots.forEach(d=>{ d.y+=d.v; if(d.y>stars.height){d.y=0;d.x=Math.random()*stars.width;}
+    sc.globalAlpha=0.5; sc.fillStyle="#9fb6ff"; sc.beginPath(); sc.arc(d.x,d.y,d.r,0,7); sc.fill(); });
+  sc.globalAlpha=1; requestAnimationFrame(loopStars); }
+loopStars();
+
+/* ====== 图鉴 ====== */
+let filterR = "ALL";
+function updateAlbum(){
+  const alb = document.getElementById("album");
+  alb.innerHTML = "";
+  const list = filterR==="ALL" ? CARDS : CARDS.filter(c=>c.r===filterR);
+  list.forEach(c=>{
+    const owned = !!save.owned[c.id];
+    const d = document.createElement("div");
+    d.className = "acard" + (owned?"":" locked");
+    d.dataset.r = c.r;
+    d.innerHTML = owned
+      ? `<div class="a-front"><span class="a-r ${c.r}">${RARITY[c.r].star}</span><div class="a-t">${c.t}</div></div>`
+      : `<div class="a-back">?</div>`;
+    if(owned){
+      if(c._new){ const n=document.createElement("div"); n.className="a-new"; n.textContent="NEW"; d.appendChild(n); }
+      d.addEventListener("click",()=>openModal(c));
+    }
+    alb.appendChild(d);
+  });
+  const ownedCount = CARDS.filter(c=>save.owned[c.id]).length;
+  document.getElementById("albumCount").textContent = `已收集 ${ownedCount} / ${CARDS.length} 张` + (filterR!=="ALL"?`（${RARITY[filterR].name}）`:"");
+}
+function buildFilters(){
+  const f = document.getElementById("filters");
+  const opts = [["ALL","全部"],["UR","UR"],["SSR","SSR"],["SR","SR"],["R","R"],["N","N"]];
+  opts.forEach(([k,lab])=>{
+    const c = document.createElement("div"); c.className="chip"+(k==="ALL"?" on":""); c.textContent=lab;
+    c.addEventListener("click",()=>{ filterR=k; document.querySelectorAll("#filters .chip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); updateAlbum(); });
+    f.appendChild(c);
+  });
+}
+
+/* ====== 弹窗 ====== */
+const mask = document.getElementById("mask"), modal = document.getElementById("modal");
+function openModal(c){
+  const rc = RARITY[c.r];
+  modal.innerHTML = `
+    <span class="close" id="mClose">✕</span>
+    <span class="m-r" style="background:${c.r==='UR'?'#ffe07a':c.r==='SSR'?'#ff9a6b':c.r==='SR'?'#c98bff':c.r==='R'?'#7cc6ff':'#9aa2c4'};color:${c.r==='UR'||c.r==='SSR'?'#3a2600':c.r==='SR'?'#1c0033':c.r==='R'?'#001a33':'#0b0e1f'}">${rc.star} ${rc.name}</span>
+    <h2>${c.t}</h2>
+    <div class="m-meta"><span>${c.dom}</span><span>${c.src}</span></div>
+    <div class="m-desc">${c.d}</div>
+    <div class="m-heat">全网热度 <span class="hb"><i style="width:${c.heat}%"></i></span> ${c.heat} / 100</div>
+    <div class="m-src">来源平台：${c.src} ｜ 数据快照：2026-07-29</div>`;
+  mask.classList.add("on");
+  document.getElementById("mClose").addEventListener("click", closeModal);
+  if(c._new){ delete c._new; const el=document.querySelector(`.acard[data-r="${c.r}"]`); }
+}
+function closeModal(){ mask.classList.remove("on"); }
+mask.addEventListener("click", e=>{ if(e.target===mask) closeModal(); });
+
+/* ====== 统计 & 保底 ====== */
+function updateStats(){
+  document.getElementById("sTotal").textContent = save.total;
+  document.getElementById("sUR").textContent = save.ur||0;
+  document.getElementById("sSSR").textContent = save.ssr||0;
+  document.getElementById("sSR").textContent = save.sr||0;
+  const srPlus = (save.ur||0)+(save.ssr||0)+(save.sr||0);
+  const rate = save.total? Math.round(srPlus/save.total*100):0;
+  document.getElementById("sRate").textContent = rate+"%";
+  const p = save.pity||0;
+  document.getElementById("pityBar").style.width = (p/10*100)+"%";
+  document.getElementById("pityTxt").textContent = p+" / 10";
+}
+
+/* ====== toast ====== */
+let toastT;
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("on");
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("on"),1800); }
+
+/* ====== ticker ====== */
+function buildTicker(){
+  const hot = CARDS.slice().sort((a,b)=>b.heat-a.heat).slice(0,16).map(c=>`<span><b>${c.t}</b> · ${c.src}</span>`).join("");
+  const track = document.getElementById("tickerTrack");
+  track.innerHTML = hot + hot; // duplicate for seamless loop
+}
+
+/* ====== 绑定 ====== */
+document.getElementById("btn1").addEventListener("click", ()=>{ if(busy) return; const c = drawOne(); markNew(c); renderDraw([c], false); });
+document.getElementById("btn10").addEventListener("click", ()=>{ if(busy) return; const cs = drawMany(10); cs.forEach(markNew); renderDraw(cs, true); });
+document.getElementById("btnSound").addEventListener("click", e=>{ save.sound=!save.sound; persist(); e.target.textContent="音效："+(save.sound?"开":"关"); if(save.sound) audio(); });
+document.getElementById("btnReset").addEventListener("click", ()=>{ if(!confirm("确定清空图鉴与抽卡记录？此操作不可撤销。")) return;
+  save = {total:0,ur:0,ssr:0,sr:0,r:0,n:0,pity:0,owned:{},sound:save.sound}; persist(); updateStats(); updateAlbum(); toast("图鉴已重置"); });
+
+function markNew(c){ if(!save.owned[c.id]) c._new = true; }
+
+/* ====== 初始化 ====== */
+buildTicker(); buildFilters(); updateAlbum(); updateStats();
+document.getElementById("btnSound").textContent = "音效："+(save.sound?"开":"关");
+// 标记初始化时已拥有的卡为已读（不显示 NEW）
+CARDS.forEach(c=>{ if(save.owned[c.id]) delete c._new; });
+</script>
+</body>
+</html>
