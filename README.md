@@ -1,4 +1,39 @@
-# 全网热搜抽卡 · HOT PULL
+<p align="center">
+  <a href="https://luisdingww-bit.github.io/hot-pull/"><img alt="Live Demo" src="https://img.shields.io/badge/%E2%96%B6_Live_Demo-ff4757?style=for-the-badge"></a>
+  <img alt="Stars" src="https://img.shields.io/github/stars/luisdingww-bit/hot-pull?style=for-the-badge&color=ffd32a">
+  <img alt="Last Commit" src="https://img.shields.io/github/last-commit/luisdingww-bit/hot-pull?style=for-the-badge">
+</p>
+
+<h1 align="center">HOT PULL · 热搜抽卡</h1>
+
+<p align="center">用全网实时热搜当卡池的抽卡小游戏</p>
+
+> [!NOTE]
+> 把今天的头条变成你的抽卡池 —— 打开网页就能抽，3 天 / 1 周 / 1 月主题自动刷新，零安装零注册。
+
+## ✨ 亮点 / Features
+- 实时抓取全网热搜生成卡池，主题每天自动更新
+- 3 天 / 1 周 / 1 月三种时间窗，随时切换
+- 纯前端单页，零安装、零注册，打开即玩
+- 抽卡动画 + 收藏 / 分享卡片
+
+## 🚀 在线体验 / Live Demo
+打开 **[Live Demo](https://luisdingww-bit.github.io/hot-pull/)** 即可免安装、纯浏览器体验。
+
+## 🛠 技术栈 / Tech Stack
+`HTML5` `Canvas` `JavaScript` `GitHub Pages`
+
+## 🔗 相关项目 / More by Louis Ding
+- [像素拼豆 × 乐高 × 3D 打印](https://pixelbead.surge.sh) — 像素拼豆 × 乐高 × 3D 打印
+- [摄像头蜘蛛侠面具](https://luisdingww-bit.github.io/spider-verse-nebula/) — 摄像头蜘蛛侠面具
+- [个人作品集](https://louis-ding.surge.sh) — 个人作品集
+- [图生 3D 打印工坊](https://snapprint.surge.sh/) — 图生 3D 打印工坊
+- [龙族同人站](https://dragonraja-ding-ldcrew.surge.sh) — 龙族同人站
+
+## 📄 License
+以仓库内 `LICENSE` 文件为准（同人作品标注 CC BY-NC 4.0 者仅限非商用）。
+
+---
 
 > 把此刻整个互联网最热的话题，变成可以抽的卡。
 
